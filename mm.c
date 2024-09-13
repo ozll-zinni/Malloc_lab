@@ -43,6 +43,7 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
+
 // 기본 상수, 매크로 
 #define WSIZE 4             
 #define DSIZE 8             
@@ -53,20 +54,24 @@ team_t team = {
 #define GET(p) (*(unsigned int *)(p))                                 
 #define PUT(p, val) (*(unsigned int *)(p) = (unsigned int)(val))      
 #define GET_SIZE(p) (GET(p) & ~0x7)                                   
+
 #define GET_ALLOC(p) (GET(p) & 0x1)                                   
 #define HDRP(bp) ((char *)(bp)-WSIZE)                                 
 #define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)) - DSIZE)          
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp)-WSIZE))) 
+
 #define PREV_BLKP(bp) ((char *)(bp)-GET_SIZE(((char *)(bp)-DSIZE)))   
 
 #define GET_SUCC(bp) (*(void **)((char *)(bp) + WSIZE)) 
 #define GET_PRED(bp) (*(void **)(bp))                
 
 static char *free_listp; 
+
 static void *extend_heap(size_t words);
 static void *coalesce(void *bp);
 static void *find_fit(size_t asize);
 static void place(void *bp, size_t asize);
+
 
 static void splice_free_block(void *bp); 
 static void add_free_block(void *bp);    
@@ -89,7 +94,6 @@ int mm_init(void)
 
     if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
         return -1;
-
     return 0;
 }
 
@@ -109,6 +113,7 @@ void *mm_malloc(size_t size)
     else
         asize = DSIZE * ((size + DSIZE + DSIZE - 1) / DSIZE); 
 
+
     // 가용 블록 검색
     if ((bp = find_fit(asize)) != NULL)
     {
@@ -122,6 +127,11 @@ void *mm_malloc(size_t size)
     place(bp, asize);
     return bp;
 }
+
+
+/*
+ * mm_free - Freeing a block does nothing.
+ */
 
 void mm_free(void *bp)
 {
@@ -165,6 +175,15 @@ void *mm_realloc(void *ptr, size_t size)
 static void *extend_heap(size_t words)
 {
     char *bp;
+
+
+    void *newptr = mm_malloc(size); 
+    if (newptr == NULL)
+        return NULL; 
+    
+    size_t copySize = GET_SIZE(HDRP(ptr)) - DSIZE; 
+    if (size < copySize)                           
+        copySize = size;                          
 
 
     size_t size = (words % 2) ? (words + 1) * WSIZE : words * WSIZE; 
